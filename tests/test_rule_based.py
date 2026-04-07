@@ -22,6 +22,7 @@ CONFIG = {
     "arena_width": 800,
     "arena_height": 800,
     "fire_cone_angle_deg": 15.0,
+    "rule_based_throttle": 0.7,
 }
 
 
@@ -32,7 +33,7 @@ def test_pure_pursuit_turns_toward_target() -> None:
     action = pure_pursuit_policy(ego, opponent, CONFIG)
 
     assert action[0] > 0
-    assert action[1] == 1.0
+    assert action[1] == 0.7
     assert action[2] == 0.0
 
 
@@ -42,7 +43,7 @@ def test_pure_pursuit_fires_when_aligned() -> None:
 
     action = pure_pursuit_policy(ego, opponent, CONFIG)
 
-    assert np.allclose(action, np.array([0.0, 1.0, 1.0], dtype=np.float32))
+    assert np.allclose(action, np.array([0.0, 0.7, 1.0], dtype=np.float32))
 
 
 def test_env_uses_rule_based_opponent_policy() -> None:

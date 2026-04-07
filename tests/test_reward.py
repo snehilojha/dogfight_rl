@@ -8,10 +8,12 @@ from envs.reward import compute_reward, toroidal_relative_position
 
 
 class MockJet:
-    def __init__(self, x, y, theta=0.0):
+    def __init__(self, x, y, theta=0.0, v=3.0, v_max=6.0):
         self.x = x
         self.y = y
         self.theta = theta
+        self.v = v
+        self.v_max = v_max
 
 
 CONFIG = {
@@ -23,6 +25,7 @@ CONFIG = {
     "hit_taken_penalty": -0.5,
     "fire_cone_reward": 0.3,
     "closing_distance_reward": 0.2,
+    "speed_reward_scale": 0.1,
     "time_penalty": -0.1,
     "out_of_bounds_penalty": -0.2,
     "fire_cone_angle_deg": 15.0,
@@ -46,7 +49,7 @@ def test_compute_reward_terminal_win() -> None:
 
     reward = compute_reward({"won": True}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, 100.2)
+    assert math.isclose(reward, 100.25)
 
 
 def test_compute_reward_terminal_loss() -> None:
@@ -55,7 +58,7 @@ def test_compute_reward_terminal_loss() -> None:
 
     reward = compute_reward({"lost": True}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, -99.8)
+    assert math.isclose(reward, -99.75)
 
 
 def test_compute_reward_hit_opponent() -> None:
@@ -64,7 +67,7 @@ def test_compute_reward_hit_opponent() -> None:
 
     reward = compute_reward({"hit_opponent": True}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, 1.2)
+    assert math.isclose(reward, 1.25)
 
 
 def test_compute_reward_got_hit() -> None:
@@ -73,7 +76,7 @@ def test_compute_reward_got_hit() -> None:
 
     reward = compute_reward({"got_hit": True}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, -0.3)
+    assert math.isclose(reward, -0.25)
 
 
 def test_compute_reward_fire_cone_bonus_only_when_aligned() -> None:
@@ -82,7 +85,7 @@ def test_compute_reward_fire_cone_bonus_only_when_aligned() -> None:
 
     reward = compute_reward({}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, 0.2)
+    assert math.isclose(reward, 0.25)
 
 
 def test_compute_reward_no_fire_cone_bonus_when_outside_angle() -> None:
@@ -91,7 +94,7 @@ def test_compute_reward_no_fire_cone_bonus_when_outside_angle() -> None:
 
     reward = compute_reward({}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, -0.1)
+    assert math.isclose(reward, -0.05)
 
 
 def test_compute_reward_closing_distance_bonus() -> None:
@@ -100,7 +103,7 @@ def test_compute_reward_closing_distance_bonus() -> None:
 
     reward = compute_reward({"prev_distance": 220.0}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, 0.4)
+    assert math.isclose(reward, 0.45)
 
 
 def test_compute_reward_no_closing_bonus_when_already_close() -> None:
@@ -109,7 +112,7 @@ def test_compute_reward_no_closing_bonus_when_already_close() -> None:
 
     reward = compute_reward({"prev_distance": 100.0}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, 0.2)
+    assert math.isclose(reward, 0.25)
 
 
 def test_compute_reward_out_of_bounds_penalty_if_flagged() -> None:
@@ -118,4 +121,4 @@ def test_compute_reward_out_of_bounds_penalty_if_flagged() -> None:
 
     reward = compute_reward({"out_of_bounds": True}, ego, opponent, CONFIG)
 
-    assert math.isclose(reward, 0.0, abs_tol=1e-9)
+    assert math.isclose(reward, 0.05, abs_tol=1e-9)

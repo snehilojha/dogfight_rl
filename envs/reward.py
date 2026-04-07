@@ -28,6 +28,7 @@ def compute_reward(events, ego_jet, opponent_jet, config):
     hit_taken_penalty = config.get("hit_taken_penalty", -0.5)
     fire_cone_reward = config.get("fire_cone_reward", 0.3)
     closing_distance_reward = config.get("closing_distance_reward", 0.2)
+    speed_reward_scale = config.get("speed_reward_scale", 0.1)
     time_penalty = config.get("time_penalty", -0.1)
     out_of_bounds_penalty = config.get("out_of_bounds_penalty", -0.2)
     fire_cone_angle_deg = config.get("fire_cone_angle_deg", 15.0)
@@ -59,6 +60,10 @@ def compute_reward(events, ego_jet, opponent_jet, config):
     prev_distance = events.get("prev_distance")
     if prev_distance is not None and prev_distance > close_range_dist and distance < prev_distance:
         reward += closing_distance_reward
+
+    max_speed = config.get("max_speed", ego_jet.v_max)
+    if max_speed > 0:
+        reward += speed_reward_scale * (ego_jet.v / max_speed)
 
     reward += time_penalty
 

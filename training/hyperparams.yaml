@@ -1,0 +1,6 @@
+arena_w: 800
+arena_h: 800
+max_speed: 6
+max_cooldown: 20
+max_health: 100
+arena_diag: 1131.370849898476

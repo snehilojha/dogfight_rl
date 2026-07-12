@@ -1,8 +1,4 @@
 import math
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from envs.config import DogfightConfig
 from envs.reward import compute_reward, toroidal_relative_position

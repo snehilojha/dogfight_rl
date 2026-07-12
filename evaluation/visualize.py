@@ -1,12 +1,8 @@
 import argparse
-import sys
-from pathlib import Path
 
 import pygame
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from agents.rule_based import pure_pursuit_policy
 from envs.config import DogfightConfig

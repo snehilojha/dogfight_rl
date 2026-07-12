@@ -8,6 +8,8 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.egg-info/
+build/
 
 .mypy_cache/
 .ruff_cache/
@@ -18,7 +20,6 @@ htmlcov/
 models/
 runs/
 wandb/
-assets/demo.gif
 assets/*.mp4
 assets/*.mov
 
@@ -29,7 +30,3 @@ assets/*.mov
 *.ckpt
 
 .ipynb_checkpoints/
-
-context.md
-Dogfight_AI_Project_Plan.md
-DOGFIGHT_COLOSSEUM_ROADMAP.md

@@ -1,10 +1,6 @@
 import math
-import sys
-from pathlib import Path
 
 import numpy as np
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from agents.rule_based import pure_pursuit_policy
 from envs.config import DogfightConfig

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dogfight-rl"
+version = "0.1.0"
+description = "2D dogfight reinforcement learning: PPO agents in a toroidal aerial combat arena"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26,<3",
+    "gymnasium>=0.29,<2",
+    "stable-baselines3>=2.3,<3",
+    "torch>=2.2",
+    "pygame>=2.5",
+    "pyyaml>=6",
+    "tensorboard>=2.15",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff"]
+
+[tool.setuptools.packages.find]
+include = ["envs*", "agents*", "training*", "evaluation*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

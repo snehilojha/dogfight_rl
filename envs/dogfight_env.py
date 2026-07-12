@@ -5,6 +5,7 @@ import numpy as np
 import pygame
 from gymnasium import spaces
 
+from envs.config import DogfightConfig
 from envs.observation import build_obs
 from envs.physics import Bullet, Jet
 from envs.reward import compute_reward, toroidal_relative_position
@@ -16,23 +17,12 @@ class DogfightEnv(gym.Env):
     def __init__(self, config=None, opponent_policy=None, render_mode=None):
         super().__init__()
 
-        base_config = {
-            "arena_width": 800,
-            "arena_height": 800,
-            "arena_diag": math.sqrt(800**2 + 800**2),
-            "max_speed": 6.0,
-            "min_speed": 1.0,
-            "max_turn_rate": math.radians(4),
-            "bullet_speed": 12.0,
-            "bullet_lifetime": 60,
-            "max_cooldown": 20,
-            "max_health": 100,
-            "hit_damage": 25,
-            "max_steps": 2000,
-        }
-        if config:
-            base_config.update(config)
-        self.config = base_config
+        if config is None:
+            self.config = DogfightConfig()
+        elif isinstance(config, DogfightConfig):
+            self.config = config
+        else:
+            self.config = DogfightConfig.from_dict(config)
 
         self.render_mode = render_mode
         self.opponent_policy = opponent_policy
@@ -63,30 +53,34 @@ class DogfightEnv(gym.Env):
         self.bullets = []
         self.next_bullet_id = 0
 
-        arena_w = self.config["arena_width"]
-        arena_h = self.config["arena_height"]
+        arena_w = self.config.arena_width
+        arena_h = self.config.arena_height
 
         self.ego_jet = Jet(
             x=arena_w * 0.25,
             y=arena_h * 0.5,
             theta=0.0,
             id=0,
-            v_min=self.config["min_speed"],
-            v_max=self.config["max_speed"],
-            w_max=self.config["max_turn_rate"],
+            v_min=self.config.min_speed,
+            v_max=self.config.max_speed,
+            w_max=self.config.max_turn_rate,
             arena_width=arena_w,
             arena_height=arena_h,
+            max_health=self.config.max_health,
+            radius=self.config.jet_radius,
         )
         self.opponent_jet = Jet(
             x=arena_w * 0.75,
             y=arena_h * 0.5,
             theta=math.pi,
             id=1,
-            v_min=self.config["min_speed"],
-            v_max=self.config["max_speed"],
-            w_max=self.config["max_turn_rate"],
+            v_min=self.config.min_speed,
+            v_max=self.config.max_speed,
+            w_max=self.config.max_turn_rate,
             arena_width=arena_w,
             arena_height=arena_h,
+            max_health=self.config.max_health,
+            radius=self.config.jet_radius,
         )
 
         obs = build_obs(self.ego_jet, self.opponent_jet, self.config)
@@ -123,7 +117,7 @@ class DogfightEnv(gym.Env):
             events["lost"] = True
             terminated = True
 
-        if self.step_count >= self.config["max_steps"]:
+        if self.step_count >= self.config.max_steps:
             truncated = True
 
         reward = compute_reward(events, self.ego_jet, self.opponent_jet, self.config)
@@ -172,14 +166,15 @@ class DogfightEnv(gym.Env):
             theta=jet.theta,
             owner_id=jet.id,
             id=self.next_bullet_id,
-            arena_width=self.config["arena_width"],
-            arena_height=self.config["arena_height"],
-            bullet_speed=self.config["bullet_speed"],
+            arena_width=self.config.arena_width,
+            arena_height=self.config.arena_height,
+            bullet_speed=self.config.bullet_speed,
+            lifetime=self.config.bullet_lifetime,
+            radius=self.config.bullet_radius,
         )
-        bullet.lifetime = self.config["bullet_lifetime"]
         self.bullets.append(bullet)
         self.next_bullet_id += 1
-        jet.gun_cooldown = self.config["max_cooldown"]
+        jet.gun_cooldown = self.config.max_cooldown
 
     def _update_bullets(self):
         for bullet in self.bullets:
@@ -203,7 +198,7 @@ class DogfightEnv(gym.Env):
                     events["hit_opponent"] = True
 
             if hit_target is not None:
-                hit_target.health -= self.config["hit_damage"]
+                hit_target.health -= self.config.hit_damage
                 if hit_target.health <= 0:
                     hit_target.health = 0
                     hit_target.alive = False
@@ -233,7 +228,7 @@ class DogfightEnv(gym.Env):
             return
 
         pygame.init()
-        size = (int(self.config["arena_width"]), int(self.config["arena_height"]))
+        size = (int(self.config.arena_width), int(self.config.arena_height))
         if self.render_mode == "human":
             self.screen = pygame.display.set_mode(size)
         else:

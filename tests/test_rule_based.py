@@ -7,6 +7,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from agents.rule_based import pure_pursuit_policy
+from envs.config import DogfightConfig
 from envs.dogfight_env import DogfightEnv
 
 
@@ -18,12 +19,12 @@ class MockJet:
         self.w_max = w_max
 
 
-CONFIG = {
-    "arena_width": 800,
-    "arena_height": 800,
-    "fire_cone_angle_deg": 15.0,
-    "rule_based_throttle": 0.7,
-}
+CONFIG = DogfightConfig(
+    arena_width=800,
+    arena_height=800,
+    fire_cone_angle_deg=15.0,
+    rule_based_throttle=0.7,
+)
 
 
 def test_pure_pursuit_turns_toward_target() -> None:

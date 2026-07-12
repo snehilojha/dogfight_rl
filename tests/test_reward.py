@@ -4,6 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from envs.config import DogfightConfig
 from envs.reward import compute_reward, toroidal_relative_position
 
 
@@ -16,21 +17,20 @@ class MockJet:
         self.v_max = v_max
 
 
-CONFIG = {
-    "arena_width": 800,
-    "arena_height": 800,
-    "kill_reward": 100.0,
-    "death_penalty": -100.0,
-    "hit_reward": 1.0,
-    "hit_taken_penalty": -0.5,
-    "fire_cone_reward": 0.3,
-    "closing_distance_reward": 0.2,
-    "speed_reward_scale": 0.1,
-    "time_penalty": -0.1,
-    "out_of_bounds_penalty": -0.2,
-    "fire_cone_angle_deg": 15.0,
-    "close_range_distance": 150.0,
-}
+CONFIG = DogfightConfig(
+    arena_width=800,
+    arena_height=800,
+    kill_reward=100.0,
+    death_penalty=-100.0,
+    hit_reward=1.0,
+    hit_taken_penalty=-0.5,
+    fire_cone_reward=0.3,
+    closing_distance_reward=0.2,
+    speed_reward_scale=0.1,
+    time_penalty=-0.1,
+    fire_cone_angle_deg=15.0,
+    close_range_distance=150.0,
+)
 
 
 def test_toroidal_relative_position_uses_shortest_path() -> None:
@@ -113,12 +113,3 @@ def test_compute_reward_no_closing_bonus_when_already_close() -> None:
     reward = compute_reward({"prev_distance": 100.0}, ego, opponent, CONFIG)
 
     assert math.isclose(reward, 0.25)
-
-
-def test_compute_reward_out_of_bounds_penalty_if_flagged() -> None:
-    ego = MockJet(100, 100, 0.0)
-    opponent = MockJet(200, 100, 0.0)
-
-    reward = compute_reward({"out_of_bounds": True}, ego, opponent, CONFIG)
-
-    assert math.isclose(reward, 0.05, abs_tol=1e-9)

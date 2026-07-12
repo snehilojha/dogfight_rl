@@ -3,13 +3,13 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import yaml
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from agents.rule_based import pure_pursuit_policy
+from envs.config import DogfightConfig
 from envs.dogfight_env import DogfightEnv
 
 
@@ -18,8 +18,7 @@ def build_env(config):
 
 
 def evaluate(model_path, vecnorm_path=None, episodes=10, config_path="training/hyperparams.yaml"):
-    with open(config_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f) or {}
+    config = DogfightConfig.from_yaml(config_path)
 
     env = DummyVecEnv([lambda: build_env(config)])
 

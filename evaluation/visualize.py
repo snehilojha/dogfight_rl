@@ -9,15 +9,17 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from agents.rule_based import pure_pursuit_policy
+from envs.config import DogfightConfig
 from envs.dogfight_env import DogfightEnv
 
 
-def build_env():
-    return DogfightEnv(opponent_policy=pure_pursuit_policy, render_mode="human")
+def build_env(config):
+    return DogfightEnv(config=config, opponent_policy=pure_pursuit_policy, render_mode="human")
 
 
-def visualize(model_path, vecnorm_path=None):
-    env = DummyVecEnv([build_env])
+def visualize(model_path, vecnorm_path=None, config_path="training/hyperparams.yaml"):
+    config = DogfightConfig.from_yaml(config_path)
+    env = DummyVecEnv([lambda: build_env(config)])
 
     if vecnorm_path:
         env = VecNormalize.load(vecnorm_path, env)
@@ -47,9 +49,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default="models/ppo_dogfight.zip")
     parser.add_argument("--vecnorm", default="models/vecnormalize.pkl")
+    parser.add_argument("--config", default="training/hyperparams.yaml")
     args = parser.parse_args()
 
-    visualize(args.model, args.vecnorm)
+    visualize(args.model, args.vecnorm, args.config)
 
 
 if __name__ == "__main__":

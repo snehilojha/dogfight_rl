@@ -12,7 +12,7 @@ def wrapped_delta(delta, arena_size):
 
 
 class Jet:
-    def __init__(self, x, y, theta, id, v_min, v_max, w_max, arena_width, arena_height):
+    def __init__(self, x, y, theta, id, v_min, v_max, w_max, arena_width, arena_height, max_health=100, radius=10.0):
         self.x = x
         self.y = y
         self.theta = wrap_angle(theta)
@@ -26,9 +26,9 @@ class Jet:
         self.arena_width = arena_width
         self.arena_height = arena_height
 
-        self.health = 100
+        self.health = max_health
         self.gun_cooldown = 0
-        self.radius = 10
+        self.radius = radius
         self.alive = True
         self.last_action = None
 
@@ -53,7 +53,7 @@ class Jet:
 
 
 class Bullet:
-    def __init__(self, x, y, theta, owner_id, id, arena_width, arena_height, bullet_speed):
+    def __init__(self, x, y, theta, owner_id, id, arena_width, arena_height, bullet_speed, lifetime=60, radius=3.0):
         self.x = x
         self.y = y
         self.theta = wrap_angle(theta)
@@ -64,8 +64,8 @@ class Bullet:
         self.arena_height = arena_height
         self.bullet_speed = bullet_speed
 
-        self.lifetime = 60
-        self.radius = 3
+        self.lifetime = lifetime
+        self.radius = radius
         self.alive = True
 
     def update(self):

@@ -63,8 +63,9 @@ def run_eval_episode(model, env):
 
 
 class DogfightEvalCallback(BaseCallback):
-    def __init__(self, eval_freq=5000, n_eval_episodes=5, verbose=0):
+    def __init__(self, config=None, eval_freq=5000, n_eval_episodes=5, verbose=0):
         super().__init__(verbose)
+        self.config = config
         self.eval_freq = eval_freq
         self.n_eval_episodes = n_eval_episodes
 
@@ -72,7 +73,7 @@ class DogfightEvalCallback(BaseCallback):
         if self.eval_freq <= 0 or self.n_calls % self.eval_freq != 0:
             return True
 
-        eval_env = DummyVecEnv([lambda: DogfightEnv(opponent_policy=pure_pursuit_policy)])
+        eval_env = DummyVecEnv([lambda: DogfightEnv(config=self.config, opponent_policy=pure_pursuit_policy)])
         if isinstance(self.training_env, VecNormalize):
             with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as tmp:
                 tmp_path = tmp.name

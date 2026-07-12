@@ -18,8 +18,6 @@ def pure_pursuit_policy(ego_jet, opponent_jet, config):
     turn = diff / ego_jet.w_max
     turn = max(-1.0, min(1.0, turn))
 
-    fire_angle = math.radians(config.get("fire_cone_angle_deg", 15.0))
-    fire = 1.0 if abs(diff) <= fire_angle else 0.0
+    fire = 1.0 if abs(diff) <= math.radians(config.fire_cone_angle_deg) else 0.0
 
-    throttle = config.get("rule_based_throttle", 0.7)
-    return np.array([turn, throttle, fire], dtype=np.float32)
+    return np.array([turn, config.rule_based_throttle, fire], dtype=np.float32)

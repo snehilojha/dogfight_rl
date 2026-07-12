@@ -2,6 +2,8 @@ import math
 
 import numpy as np
 
+from envs.physics import relative_bearing, toroidal_delta
+
 
 def build_obs(ego_jet, opponent_jet, config) -> np.ndarray:
     """
@@ -25,26 +27,15 @@ def build_obs(ego_jet, opponent_jet, config) -> np.ndarray:
     obs[3] = math.cos(ego_jet.theta)
     obs[4] = ego_jet.v / config.max_speed
 
-    # Toroidal (wrap-around) boundaries
-    dx = opponent_jet.x - ego_jet.x
-    dy = opponent_jet.y - ego_jet.y
-
-    if abs(dx) > arena_w / 2:
-        dx = dx - math.copysign(arena_w, dx)
-
-    if abs(dy) > arena_h / 2:
-        dy = dy - math.copysign(arena_h, dy)
-
     # === OPPONENT RELATIVE STATE ===
+    dx, dy = toroidal_delta(ego_jet.x, ego_jet.y, opponent_jet.x, opponent_jet.y, arena_w, arena_h)
     obs[5] = dx / arena_w
     obs[6] = dy / arena_h
 
     distance = math.sqrt(dx * dx + dy * dy)
     obs[7] = distance / config.arena_diag
 
-    angle_to_opponent = math.atan2(dy, dx)
-    rel_angle = angle_to_opponent - ego_jet.theta
-    rel_angle = (rel_angle + math.pi) % (2 * math.pi) - math.pi
+    rel_angle = relative_bearing(dx, dy, ego_jet.theta)
 
     obs[8] = math.sin(rel_angle)
     obs[9] = math.cos(rel_angle)

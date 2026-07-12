@@ -11,6 +11,16 @@ def wrapped_delta(delta, arena_size):
     return delta
 
 
+def toroidal_delta(ax, ay, bx, by, arena_width, arena_height):
+    """Shortest (dx, dy) from point a to point b on the torus."""
+    return wrapped_delta(bx - ax, arena_width), wrapped_delta(by - ay, arena_height)
+
+
+def relative_bearing(dx, dy, theta):
+    """Angle of (dx, dy) relative to heading theta, wrapped to [-pi, pi)."""
+    return wrap_angle(math.atan2(dy, dx) - theta)
+
+
 class Jet:
     def __init__(self, x, y, theta, id, v_min, v_max, w_max, arena_width, arena_height, max_health=100, radius=10.0):
         self.x = x

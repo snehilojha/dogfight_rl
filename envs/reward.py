@@ -1,19 +1,20 @@
 import math
 
-
-def wrapped_delta(delta, arena_size):
-    if abs(delta) > arena_size / 2:
-        delta = delta - math.copysign(arena_size, delta)
-    return delta
+from envs.physics import relative_bearing, toroidal_delta
 
 
-def toroidal_relative_position(ego_jet, opponent_jet, config):
-    dx = opponent_jet.x - ego_jet.x
-    dy = opponent_jet.y - ego_jet.y
+def potential(ego_jet, opponent_jet, config):
+    """Distance-based potential phi(s) for potential-based reward shaping.
 
-    dx = wrapped_delta(dx, config.arena_width)
-    dy = wrapped_delta(dy, config.arena_height)
-    return dx, dy
+    More negative when far from the opponent, 0 at zero distance. Shaping is
+    gamma * phi(s') - phi(s), which is policy-invariant (Ng et al. 1999) as
+    long as gamma matches the discount used by the learner.
+    """
+    dx, dy = toroidal_delta(
+        ego_jet.x, ego_jet.y, opponent_jet.x, opponent_jet.y, config.arena_width, config.arena_height
+    )
+    distance = math.hypot(dx, dy)
+    return -config.closing_shaping_scale * distance / config.arena_diag
 
 
 def compute_reward(events, ego_jet, opponent_jet, config):
@@ -31,22 +32,22 @@ def compute_reward(events, ego_jet, opponent_jet, config):
     if events.get("got_hit", False):
         reward += config.hit_taken_penalty
 
-    dx, dy = toroidal_relative_position(ego_jet, opponent_jet, config)
-    distance = math.sqrt(dx * dx + dy * dy)
-
-    angle_to_opponent = math.atan2(dy, dx)
-    rel_angle = angle_to_opponent - ego_jet.theta
-    rel_angle = (rel_angle + math.pi) % (2 * math.pi) - math.pi
+    dx, dy = toroidal_delta(
+        ego_jet.x, ego_jet.y, opponent_jet.x, opponent_jet.y, config.arena_width, config.arena_height
+    )
+    rel_angle = relative_bearing(dx, dy, ego_jet.theta)
 
     if abs(rel_angle) <= math.radians(config.fire_cone_angle_deg):
         reward += config.fire_cone_reward
 
-    prev_distance = events.get("prev_distance")
-    if prev_distance is not None and prev_distance > config.close_range_distance and distance < prev_distance:
-        reward += config.closing_distance_reward
-
-    if config.max_speed > 0:
-        reward += config.speed_reward_scale * (ego_jet.v / config.max_speed)
+    prev_phi = events.get("prev_phi")
+    if prev_phi is not None:
+        # phi(terminal) must be 0 for the shaping to stay policy-invariant.
+        if events.get("won", False) or events.get("lost", False):
+            next_phi = 0.0
+        else:
+            next_phi = potential(ego_jet, opponent_jet, config)
+        reward += config.shaping_gamma * next_phi - prev_phi
 
     reward += config.time_penalty
 

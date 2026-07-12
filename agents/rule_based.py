@@ -2,18 +2,14 @@ import math
 
 import numpy as np
 
-from envs.reward import toroidal_relative_position
-
-
-def angle_diff(target_angle, current_angle):
-    diff = target_angle - current_angle
-    return (diff + math.pi) % (2 * math.pi) - math.pi
+from envs.physics import relative_bearing, toroidal_delta
 
 
 def pure_pursuit_policy(ego_jet, opponent_jet, config):
-    dx, dy = toroidal_relative_position(ego_jet, opponent_jet, config)
-    target_angle = math.atan2(dy, dx)
-    diff = angle_diff(target_angle, ego_jet.theta)
+    dx, dy = toroidal_delta(
+        ego_jet.x, ego_jet.y, opponent_jet.x, opponent_jet.y, config.arena_width, config.arena_height
+    )
+    diff = relative_bearing(dx, dy, ego_jet.theta)
 
     turn = diff / ego_jet.w_max
     turn = max(-1.0, min(1.0, turn))

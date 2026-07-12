@@ -69,6 +69,7 @@ def main():
     args = parser.parse_args()
 
     env_config, train_config = load_configs(args.config)
+    env_config.shaping_gamma = train_config.gamma
     total_timesteps = args.timesteps or train_config.total_timesteps
 
     set_seed(args.seed)

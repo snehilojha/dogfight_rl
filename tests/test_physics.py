@@ -1,6 +1,6 @@
 import math
 
-from envs.physics import Bullet, Jet, check_collisions, wrap_angle, wrapped_delta
+from envs.physics import Bullet, Jet, check_collisions, relative_bearing, toroidal_delta, wrap_angle, wrapped_delta
 
 
 ARENA_W = 800
@@ -47,6 +47,30 @@ def test_wrap_angle_normalizes_to_expected_range() -> None:
 def test_wrapped_delta_prefers_toroidal_short_path() -> None:
     assert wrapped_delta(790.0, 800.0) == -10.0
     assert wrapped_delta(-790.0, 800.0) == 10.0
+
+
+def test_toroidal_delta_direct_path() -> None:
+    assert toroidal_delta(100.0, 100.0, 200.0, 150.0, ARENA_W, ARENA_H) == (100.0, 50.0)
+
+
+def test_toroidal_delta_wraps_across_both_borders() -> None:
+    assert toroidal_delta(790.0, 790.0, 10.0, 10.0, ARENA_W, ARENA_H) == (20.0, 20.0)
+    assert toroidal_delta(10.0, 10.0, 790.0, 790.0, ARENA_W, ARENA_H) == (-20.0, -20.0)
+
+
+def test_relative_bearing_basic_directions() -> None:
+    assert math.isclose(relative_bearing(1.0, 0.0, 0.0), 0.0)
+    assert math.isclose(relative_bearing(0.0, 1.0, 0.0), math.pi / 2)
+    assert math.isclose(relative_bearing(0.0, -1.0, 0.0), -math.pi / 2)
+
+
+def test_relative_bearing_wraps_at_pi() -> None:
+    # Directly behind: magnitude pi, wrapped into [-pi, pi)
+    behind = relative_bearing(-1.0, 0.0, 0.0)
+    assert math.isclose(abs(behind), math.pi)
+
+    # Heading past pi wraps back around instead of exceeding it
+    assert math.isclose(relative_bearing(1.0, 0.0, 1.5 * math.pi), math.pi / 2)
 
 
 def test_jet_update_clamps_action_and_moves_forward() -> None:

@@ -7,8 +7,8 @@ from gymnasium import spaces
 
 from envs.config import DogfightConfig
 from envs.observation import build_obs
-from envs.physics import Bullet, Jet
-from envs.reward import compute_reward, toroidal_relative_position
+from envs.physics import Bullet, Jet, check_collisions
+from envs.reward import compute_reward, potential
 
 
 class DogfightEnv(gym.Env):
@@ -91,8 +91,7 @@ class DogfightEnv(gym.Env):
         self.step_count += 1
 
         action = np.asarray(action, dtype=np.float32)
-        prev_dx, prev_dy = toroidal_relative_position(self.ego_jet, self.opponent_jet, self.config)
-        prev_distance = math.sqrt(prev_dx * prev_dx + prev_dy * prev_dy)
+        prev_phi = potential(self.ego_jet, self.opponent_jet, self.config)
 
         opponent_action = self._get_opponent_action()
 
@@ -103,7 +102,7 @@ class DogfightEnv(gym.Env):
         self._maybe_fire(self.opponent_jet, opponent_action)
         self._update_bullets()
 
-        events = {"prev_distance": prev_distance}
+        events = {"prev_phi": prev_phi}
         self._apply_bullet_hits(events)
 
         terminated = False
@@ -182,43 +181,24 @@ class DogfightEnv(gym.Env):
         self.bullets = [bullet for bullet in self.bullets if bullet.alive]
 
     def _apply_bullet_hits(self, events):
-        remaining_bullets = []
+        jets = {jet.id: jet for jet in (self.ego_jet, self.opponent_jet)}
+        hits = check_collisions(list(jets.values()), self.bullets)["bullet_hits"]
 
-        for bullet in self.bullets:
-            hit_target = None
+        consumed = set()
+        for bullet_id, jet_id, _owner_id in hits:
+            target = jets[jet_id]
+            if not target.alive:
+                continue
 
-            if self.ego_jet.alive and bullet.owner_id != self.ego_jet.id:
-                if self._bullet_hits_jet(bullet, self.ego_jet):
-                    hit_target = self.ego_jet
-                    events["got_hit"] = True
+            consumed.add(bullet_id)
+            events["got_hit" if target is self.ego_jet else "hit_opponent"] = True
 
-            if hit_target is None and self.opponent_jet.alive and bullet.owner_id != self.opponent_jet.id:
-                if self._bullet_hits_jet(bullet, self.opponent_jet):
-                    hit_target = self.opponent_jet
-                    events["hit_opponent"] = True
+            target.health -= self.config.hit_damage
+            if target.health <= 0:
+                target.health = 0
+                target.alive = False
 
-            if hit_target is not None:
-                hit_target.health -= self.config.hit_damage
-                if hit_target.health <= 0:
-                    hit_target.health = 0
-                    hit_target.alive = False
-                bullet.alive = False
-            else:
-                remaining_bullets.append(bullet)
-
-        self.bullets = remaining_bullets
-
-    def _bullet_hits_jet(self, bullet, jet):
-        dx = bullet.x - jet.x
-        dy = bullet.y - jet.y
-
-        if abs(dx) > bullet.arena_width / 2:
-            dx = dx - math.copysign(bullet.arena_width, dx)
-        if abs(dy) > bullet.arena_height / 2:
-            dy = dy - math.copysign(bullet.arena_height, dy)
-
-        r_sum = bullet.radius + jet.radius
-        return dx * dx + dy * dy <= r_sum * r_sum
+        self.bullets = [bullet for bullet in self.bullets if bullet.id not in consumed]
 
     def _ensure_pygame(self):
         if self.render_mode not in ("human", "rgb_array"):

@@ -49,10 +49,11 @@ class DogfightConfig:
     hit_reward: float = 7.0
     hit_taken_penalty: float = -0.8
     fire_cone_reward: float = 0.2
-    closing_distance_reward: float = 0.5
-    speed_reward_scale: float = 0.10
+    closing_shaping_scale: float = 0.5
+    # Discount used in the potential-based shaping term; must match the
+    # learner's gamma (train.py syncs it from TrainConfig.gamma).
+    shaping_gamma: float = 0.99
     time_penalty: float = -0.04
-    close_range_distance: float = 180.0
 
     @property
     def arena_diag(self) -> float:

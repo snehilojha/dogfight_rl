@@ -44,3 +44,10 @@ training:
   checkpoint_freq: 10000
   eval_freq: 5000
   n_eval_episodes: 10
+
+  # self-play
+  snapshot_win_threshold: 0.55
+  steps_per_generation: 100000
+  pool_max_size: 20
+  scripted_opponent_prob: 0.2
+  selfplay_eval_episodes: 20

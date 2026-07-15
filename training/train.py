@@ -22,15 +22,22 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
 
 
-def make_env(env_config):
+def make_env(env_config, opponent_policy=None, opponent_provider=None):
     def _factory():
-        return DogfightEnv(config=env_config, opponent_policy=pure_pursuit_policy)
+        return DogfightEnv(
+            config=env_config,
+            opponent_policy=opponent_policy,
+            opponent_provider=opponent_provider,
+        )
 
     return _factory
 
 
-def build_vec_env(env_config, train_config):
-    env = DummyVecEnv([make_env(env_config)])
+def build_vec_env(env_config, train_config, opponent_policy=None, opponent_provider=None):
+    if opponent_policy is None and opponent_provider is None:
+        opponent_policy = pure_pursuit_policy
+
+    env = DummyVecEnv([make_env(env_config, opponent_policy, opponent_provider)])
 
     if train_config.use_vec_normalize:
         env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_obs=10.0)

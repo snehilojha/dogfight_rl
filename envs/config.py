@@ -38,6 +38,12 @@ class DogfightConfig:
 
     # episode
     max_steps: int = 2000
+    # spawns: randomized (uniform positions with a minimum toroidal separation,
+    # uniform headings) via the env's seeded RNG. Turn off for fixed scenarios
+    # such as demo recording; deterministic spawns place both jets at facing
+    # quarter-points.
+    randomize_spawns: bool = True
+    min_spawn_separation: float = 300.0
 
     # scripted opponent
     rule_based_throttle: float = 0.55
@@ -87,6 +93,13 @@ class TrainConfig:
     checkpoint_freq: int = 10_000
     eval_freq: int = 5_000
     n_eval_episodes: int = 10
+
+    # self-play (training/self_play_train.py)
+    snapshot_win_threshold: float = 0.55
+    steps_per_generation: int = 100_000
+    pool_max_size: int = 20
+    scripted_opponent_prob: float = 0.2
+    selfplay_eval_episodes: int = 20
 
     @classmethod
     def from_dict(cls, data):

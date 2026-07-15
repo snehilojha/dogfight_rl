@@ -7,14 +7,14 @@ from gymnasium import spaces
 
 from envs.config import DogfightConfig
 from envs.observation import build_obs
-from envs.physics import Bullet, Jet, check_collisions
+from envs.physics import Bullet, Jet, check_collisions, toroidal_delta
 from envs.reward import compute_reward, potential
 
 
 class DogfightEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
 
-    def __init__(self, config=None, opponent_policy=None, render_mode=None):
+    def __init__(self, config=None, opponent_policy=None, opponent_provider=None, render_mode=None):
         super().__init__()
 
         if config is None:
@@ -25,7 +25,11 @@ class DogfightEnv(gym.Env):
             self.config = DogfightConfig.from_dict(config)
 
         self.render_mode = render_mode
+        # opponent_policy is the fixed opponent; opponent_provider (used by
+        # self-play) is a zero-arg callable resampled each reset that returns
+        # the policy for the coming episode and takes precedence when set.
         self.opponent_policy = opponent_policy
+        self.opponent_provider = opponent_provider
 
         self.action_space = spaces.Box(
             low=np.array([-1.0, 0.0, 0.0], dtype=np.float32),
@@ -53,39 +57,61 @@ class DogfightEnv(gym.Env):
         self.bullets = []
         self.next_bullet_id = 0
 
-        arena_w = self.config.arena_width
-        arena_h = self.config.arena_height
+        if self.opponent_provider is not None:
+            self.opponent_policy = self.opponent_provider()
 
-        self.ego_jet = Jet(
-            x=arena_w * 0.25,
-            y=arena_h * 0.5,
-            theta=0.0,
-            id=0,
-            v_min=self.config.min_speed,
-            v_max=self.config.max_speed,
-            w_max=self.config.max_turn_rate,
-            arena_width=arena_w,
-            arena_height=arena_h,
-            max_health=self.config.max_health,
-            radius=self.config.jet_radius,
-        )
-        self.opponent_jet = Jet(
-            x=arena_w * 0.75,
-            y=arena_h * 0.5,
-            theta=math.pi,
-            id=1,
-            v_min=self.config.min_speed,
-            v_max=self.config.max_speed,
-            w_max=self.config.max_turn_rate,
-            arena_width=arena_w,
-            arena_height=arena_h,
-            max_health=self.config.max_health,
-            radius=self.config.jet_radius,
-        )
+        (ego_x, ego_y, ego_theta), (opp_x, opp_y, opp_theta) = self._sample_spawns()
+        self.ego_jet = self._make_jet(ego_x, ego_y, ego_theta, jet_id=0)
+        self.opponent_jet = self._make_jet(opp_x, opp_y, opp_theta, jet_id=1)
 
         obs = build_obs(self.ego_jet, self.opponent_jet, self.config)
         info = {}
         return obs, info
+
+    def _make_jet(self, x, y, theta, jet_id):
+        return Jet(
+            x=x,
+            y=y,
+            theta=theta,
+            id=jet_id,
+            v_min=self.config.min_speed,
+            v_max=self.config.max_speed,
+            w_max=self.config.max_turn_rate,
+            arena_width=self.config.arena_width,
+            arena_height=self.config.arena_height,
+            max_health=self.config.max_health,
+            radius=self.config.jet_radius,
+        )
+
+    def _sample_spawns(self):
+        """Return ((x, y, theta), (x, y, theta)) spawn poses for ego and opponent.
+
+        Randomized spawns draw uniform positions (rejection-sampled to keep a
+        minimum toroidal separation) and uniform headings from the env's seeded
+        RNG, so a fixed seed reproduces the layout. Deterministic spawns place
+        both jets at facing quarter-points.
+        """
+        arena_w = self.config.arena_width
+        arena_h = self.config.arena_height
+
+        if not self.config.randomize_spawns:
+            return (arena_w * 0.25, arena_h * 0.5, 0.0), (arena_w * 0.75, arena_h * 0.5, math.pi)
+
+        rng = self.np_random
+        min_sep = self.config.min_spawn_separation
+        ego_x = float(rng.uniform(0.0, arena_w))
+        ego_y = float(rng.uniform(0.0, arena_h))
+
+        for _ in range(1000):
+            opp_x = float(rng.uniform(0.0, arena_w))
+            opp_y = float(rng.uniform(0.0, arena_h))
+            dx, dy = toroidal_delta(ego_x, ego_y, opp_x, opp_y, arena_w, arena_h)
+            if math.hypot(dx, dy) >= min_sep:
+                break
+
+        ego_theta = float(rng.uniform(-math.pi, math.pi))
+        opp_theta = float(rng.uniform(-math.pi, math.pi))
+        return (ego_x, ego_y, ego_theta), (opp_x, opp_y, opp_theta)
 
     def step(self, action):
         self.step_count += 1

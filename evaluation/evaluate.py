@@ -7,6 +7,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from agents.rule_based import pure_pursuit_policy
 from envs.config import DogfightConfig
 from envs.dogfight_env import DogfightEnv
+from evaluation.rollout import run_episode
 
 
 def build_env(config):
@@ -31,29 +32,13 @@ def evaluate(model_path, vecnorm_path=None, episodes=10, config_path="training/h
     rewards = []
     lengths = []
 
-    for episode in range(episodes):
-        obs = env.reset()
-        done = False
-        episode_reward = 0.0
-        episode_length = 0
-        final_info = None
-
-        while not done:
-            action, _ = model.predict(obs, deterministic=True)
-            obs, reward, dones, infos = env.step(action)
-
-            episode_reward += float(reward[0])
-            episode_length += 1
-            done = bool(dones[0])
-            final_info = infos[0]
-
-        rewards.append(episode_reward)
-        lengths.append(episode_length)
-
-        events = final_info.get("events", {}) if final_info else {}
-        if events.get("won", False):
+    for _ in range(episodes):
+        result = run_episode(model, env)
+        rewards.append(result.total_reward)
+        lengths.append(result.length)
+        if result.outcome == "win":
             wins += 1
-        elif events.get("lost", False):
+        elif result.outcome == "loss":
             losses += 1
         else:
             timeouts += 1

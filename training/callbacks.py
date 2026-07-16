@@ -8,6 +8,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
 from agents.rule_based import pure_pursuit_policy
 from envs.dogfight_env import DogfightEnv
+from evaluation.rollout import run_episode
 
 
 class ProgressCallback(BaseCallback):
@@ -40,24 +41,6 @@ class ProgressCallback(BaseCallback):
         return True
 
 
-def run_eval_episode(model, env):
-    obs = env.reset()
-    done = False
-    total_reward = 0.0
-    episode_length = 0
-    final_info = None
-
-    while not done:
-        action, _ = model.predict(obs, deterministic=True)
-        obs, reward, dones, infos = env.step(action)
-        total_reward += float(reward[0])
-        episode_length += 1
-        done = bool(dones[0])
-        final_info = infos[0]
-
-    return total_reward, episode_length, final_info
-
-
 def build_frozen_eval_env(training_env, config, opponent_policy):
     """A single-env VecEnv mirroring the training env against a fixed opponent.
 
@@ -85,13 +68,12 @@ def evaluate_policy_vs(model, training_env, config, opponent_policy, n_episodes)
     rewards, lengths = [], []
 
     for _ in range(n_episodes):
-        reward, length, info = run_eval_episode(model, eval_env)
-        rewards.append(reward)
-        lengths.append(length)
-        events = info.get("events", {}) if info else {}
-        if events.get("won", False):
+        result = run_episode(model, eval_env)
+        rewards.append(result.total_reward)
+        lengths.append(result.length)
+        if result.outcome == "win":
             wins += 1
-        elif events.get("lost", False):
+        elif result.outcome == "loss":
             losses += 1
         else:
             timeouts += 1

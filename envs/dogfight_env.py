@@ -50,6 +50,7 @@ class DogfightEnv(gym.Env):
         self.step_count = 0
         self.screen = None
         self.clock = None
+        self.font = None
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -234,6 +235,9 @@ class DogfightEnv(gym.Env):
             return
 
         pygame.init()
+        if not pygame.font.get_init():
+            pygame.font.init()
+        self.font = pygame.font.SysFont("consolas", 16)
         size = (int(self.config.arena_width), int(self.config.arena_height))
         if self.render_mode == "human":
             self.screen = pygame.display.set_mode(size)
@@ -244,13 +248,31 @@ class DogfightEnv(gym.Env):
     def _draw_scene(self):
         self.screen.fill((18, 22, 32))
 
+        ego_color = (80, 220, 120)
+        opp_color = (220, 90, 90)
         if self.ego_jet is not None:
-            self._draw_jet(self.ego_jet, (80, 220, 120))
+            self._draw_jet(self.ego_jet, ego_color)
+            self._draw_health_bar(self.ego_jet, ego_color)
         if self.opponent_jet is not None:
-            self._draw_jet(self.opponent_jet, (220, 90, 90))
+            self._draw_jet(self.opponent_jet, opp_color)
+            self._draw_health_bar(self.opponent_jet, opp_color)
 
         for bullet in self.bullets:
             pygame.draw.circle(self.screen, (255, 230, 120), (int(bullet.x), int(bullet.y)), int(bullet.radius))
+
+        if self.font is not None:
+            label = self.font.render(f"step {self.step_count}", True, (200, 210, 225))
+            self.screen.blit(label, (8, 8))
+
+    def _draw_health_bar(self, jet, color):
+        if self.font is None:
+            return
+        frac = max(0.0, jet.health / self.config.max_health)
+        width, height = 30, 4
+        x = int(jet.x - width / 2)
+        y = int(jet.y - jet.radius - 10)
+        pygame.draw.rect(self.screen, (60, 60, 70), (x, y, width, height))
+        pygame.draw.rect(self.screen, color, (x, y, int(width * frac), height))
 
     def _draw_jet(self, jet, color):
         nose = (

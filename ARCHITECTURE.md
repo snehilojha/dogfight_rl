@@ -5,8 +5,8 @@ invariants that hold it all up. `IMPLEMENTATION_PLAN.md` describes *what to buil
 what order*; this document describes *what the built thing is*.
 
 Status markers: **[built]** exists and is tested; **[pending]** designed here but not yet
-written. Everything through Phase 4's tooling is built; Phase 5 and the two acceptance
-experiments are pending.
+written. Everything through Phase 4 is built and its acceptance experiments have run (§8);
+Phase 5 (README, notebooks, CI) is not started.
 
 ---
 
@@ -78,7 +78,7 @@ graph TD
         BENCH["benchmark.py → JSON"]
         EVAL["evaluate.py"]
         REC["record.py → GIF"]
-        MATRIX["gen_matrix.py<br/>(pending)"]
+        MATRIX["gen_matrix.py<br/>gen i vs gen j"]
         ROLL --> BENCH
         ROLL --> EVAL
         ROLL --> MATRIX
@@ -430,7 +430,7 @@ graph LR
     ROLL --> EVAL["evaluate.py<br/>quick win/loss print"]
     ROLL --> BENCH["benchmark.py<br/>N opponents × M seeds → JSON"]
     ROLL --> CB["callbacks.py<br/>in-training eval"]
-    ROLL --> MTX["gen_matrix.py [pending]<br/>gen i vs gen j"]
+    ROLL --> MTX["gen_matrix.py [built]<br/>gen i vs gen j"]
     BENCH --> JSON["benchmark_results.json"]
     JSON --> README["README table [pending]"]
     JSON --> NB["notebooks [pending]"]
@@ -448,21 +448,25 @@ table can always be traced back to the code that produced it.
 wrapper. It uses a raw `DogfightEnv(render_mode="rgb_array")` and applies the frozen
 normalization by hand (§6.1) — the reason that formula appears twice in the codebase.
 
-### 7.1 The generation matrix **[pending]**
+### 7.1 The generation matrix **[built]**
 
-The centerpiece evidence for Phase 3, and the last significant piece of missing tooling.
-It plays every pool generation against every other and reports a win-rate matrix:
+The centerpiece evidence for Phase 3. `evaluation/gen_matrix.py` plays every pool
+generation (as ego) against every other (as opponent) and reports a win-rate matrix.
+Run against the 1M-step pool it comes out cleanly monotonic — later generations beat
+earlier ones across the board:
 
 ```
-        gen_0  gen_1  gen_2  gen_3  gen_4
-gen_0     -     0.38   0.31   0.22   0.19
-gen_1   0.62     -     0.41   0.35   0.28
-...
+ego\opp  gen_0  gen_1  gen_2  gen_3  gen_4
+gen_0     --    0.00   0.00   0.00   0.00
+gen_1    1.00    --    0.00   0.00   0.00
+gen_2    1.00   1.00    --    0.00   0.05
+gen_3    1.00   1.00   0.45    --    0.20
+gen_4    1.00   1.00   0.90   0.40    --
 ```
 
-Acceptance requires gen *N* beating gen *N−3* more than 60% of the time. A matrix that is
-uniformly ~0.5 means self-play produced no progress — which is a real possible outcome
-and must be reported honestly if it happens.
+Acceptance requires gen *N* beating gen *N−3* more than 60% of the time: gen_3 beats
+gen_0 and gen_4 beats gen_1, both at 100% — **PASS**. A matrix that came out uniformly
+~0.5 would have meant self-play produced no progress; that did not happen here.
 
 ---
 
@@ -479,31 +483,46 @@ graph LR
     style P5 fill:#5a1f1f,color:#fff
 ```
 
-Green = accepted · amber = code complete, acceptance pending · red = not started.
+Green = accepted · amber = accepted with a caveat · red = not started.
 
 | Phase | Code | Evidence |
 |---|---|---|
 | 0 — hygiene | done | accepted |
 | 1 — config SSOT | done | accepted |
 | 2 — geometry + reward | done | accepted — baseline comparison showed no regression |
-| 3 — self-play | done, 58 tests pass | **missing** — generation matrix not written |
-| 4 — benchmark + recording | done | **missing** — only smoke-model numbers so far |
-| 5 — README, notebooks, CI | not started | — |
+| 3 — self-play | done, 61 tests pass | accepted **with caveat** (see below) |
+| 4 — benchmark + recording | done | accepted — real benchmark + `assets/demo.gif` produced |
+| 5 — README, notebooks, CI | not started | out of scope for now |
 
-**The honest summary: we have a complete pipeline and no results from it yet.** The 1M-step
-self-play run finished and produced `models/ppo_selfplay.zip` with a 5-generation pool, but
-nothing has yet measured whether those generations actually improve on each other. The
-benchmark table renders correctly and the GIF recorder works, but every number produced so
-far came from a throwaway smoke checkpoint. Closing Phases 3 and 4 is a matter of writing
-`gen_matrix.py` and pointing the existing tools at the real checkpoint — not of writing
-more pipeline.
+**Phase 3 result, stated honestly.** Self-play worked as a *curriculum*: the generation
+matrix (§7.1) is cleanly monotonic and passes the gen-N-beats-gen-(N−3) bar at 100%. But
+the second acceptance criterion — *final agent beats pure pursuit ≥ 9/10* — is **not met**.
+The 1M-step self-play agent (`models/ppo_selfplay.zip`) benchmarks as:
+
+| opponent | win% | loss% | timeout% |
+|---|---|---|---|
+| pure_pursuit | 14 | 1 | 84 |
+| lead_pursuit | 24 | 1 | 74 |
+| evasive | 78 | 0 | 22 |
+| random | 77 | 0 | 23 |
+
+It dominates evasive and random but *stalls* against the pursuit bots — near-zero losses,
+but it times out rather than closing the kill. Self-play optimized **not-losing** against
+copies of itself, and a pursuit bot that constantly turns to face the agent makes closing
+risky, so the learned answer is to survive rather than finish. This is a real property of
+the objective, not a bug. (For contrast, the earlier *directly-trained* model in `models/`
+reached 10/10 vs pure pursuit — it never saw the self-play curriculum but was rewarded
+purely for winning against that one opponent.) The finding is accepted as-is rather than
+papered over; making the self-play agent a finisher would need reward/opponent-mix tuning
+and a retrain.
 
 ### Known gaps
 
-- `evaluation/gen_matrix.py` does not exist.
-- `assets/demo.gif` has not been recorded from a real model.
+- **Phase 5 not started**: no README, notebooks, or CI. The suite must run headless with
+  `SDL_VIDEODRIVER=dummy` when CI is eventually added.
 - `ruff` is declared in `pyproject.toml` dev extras but is not installed in `.venv`.
-- No CI yet; the suite must run headless with `SDL_VIDEODRIVER=dummy`.
+- The self-play agent does not finish against scripted pursuit (documented above); a
+  finisher would require tuning + retrain.
 - A 100k-step budget reliably loses to pure pursuit (~61-step episodes, a suicide-charge
   signature). This is a known property of the budget, **not** a regression — don't chase it.
 

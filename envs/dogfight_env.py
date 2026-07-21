@@ -263,6 +263,10 @@ class DogfightEnv(gym.Env):
         if self.font is not None:
             label = self.font.render(f"step {self.step_count}", True, (200, 210, 225))
             self.screen.blit(label, (8, 8))
+            agent_label = self.font.render("green: agent", True, ego_color)
+            opp_label = self.font.render("red: opponent", True, opp_color)
+            self.screen.blit(agent_label, (8, 28))
+            self.screen.blit(opp_label, (8, 46))
 
     def _draw_health_bar(self, jet, color):
         if self.font is None:

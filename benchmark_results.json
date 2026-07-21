@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "model": "models/ppo_selfplay.zip",
+    "vecnorm": "models/vecnormalize_selfplay.pkl",
+    "config": "training/hyperparams.yaml",
+    "episodes_per_seed": 30,
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "git_commit": "24c9c40967de64aa7d2c8b1832b6298b71790f2f",
+    "timestamp": "2026-07-21T16:25:26.300076+00:00"
+  },
+  "results": {
+    "pure_pursuit": {
+      "win_rate_mean": 0.14444444444444446,
+      "win_rate_std": 0.056655772373253165,
+      "loss_rate_mean": 0.011111111111111112,
+      "timeout_rate_mean": 0.8444444444444444,
+      "reward_mean": 37.99542581650118,
+      "reward_std": 12.94695126973301,
+      "ep_length_mean": 1742.6444444444444
+    },
+    "lead_pursuit": {
+      "win_rate_mean": 0.24444444444444444,
+      "win_rate_std": 0.08748897637790899,
+      "loss_rate_mean": 0.011111111111111112,
+      "timeout_rate_mean": 0.7444444444444445,
+      "reward_mean": 55.70310492664576,
+      "reward_std": 9.995202637064267,
+      "ep_length_mean": 1599.2555555555555
+    },
+    "evasive": {
+      "win_rate_mean": 0.7777777777777777,
+      "win_rate_std": 0.0566557723732532,
+      "loss_rate_mean": 0.0,
+      "timeout_rate_mean": 0.22222222222222224,
+      "reward_mean": 219.05611640728182,
+      "reward_std": 12.105318371256129,
+      "ep_length_mean": 1344.8666666666668
+    },
+    "random": {
+      "win_rate_mean": 0.7666666666666666,
+      "win_rate_std": 0.08164965809277262,
+      "loss_rate_mean": 0.0,
+      "timeout_rate_mean": 0.2333333333333333,
+      "reward_mean": 209.54033454954626,
+      "reward_std": 18.50636761305228,
+      "ep_length_mean": 1004.0222222222222
+    }
+  }
+}

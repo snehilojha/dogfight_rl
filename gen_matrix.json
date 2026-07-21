@@ -1,0 +1,72 @@
+{
+  "metadata": {
+    "pool_dir": "models/pool",
+    "config": "training/hyperparams.yaml",
+    "episodes_per_cell": 20,
+    "base_seed": 0,
+    "gap": 3,
+    "threshold": 0.6,
+    "timestamp": "2026-07-21T16:19:18.498614+00:00"
+  },
+  "generations": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "matrix": {
+    "0": {
+      "0": null,
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0
+    },
+    "1": {
+      "0": 1.0,
+      "1": null,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0
+    },
+    "2": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": null,
+      "3": 0.0,
+      "4": 0.05
+    },
+    "3": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 0.45,
+      "3": null,
+      "4": 0.2
+    },
+    "4": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 0.9,
+      "3": 0.4,
+      "4": null
+    }
+  },
+  "acceptance": {
+    "passed": true,
+    "checks": [
+      {
+        "later": 3,
+        "earlier": 0,
+        "win_rate": 1.0,
+        "pass": true
+      },
+      {
+        "later": 4,
+        "earlier": 1,
+        "win_rate": 1.0,
+        "pass": true
+      }
+    ]
+  }
+}
